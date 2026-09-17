@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#5b4bdb">
+  <title>Envio de Tarefas</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #f4f2ff, #e9e7ff);
+      min-height: 100vh;
+      color: #202124;
+      padding: 20px;
+    }
+    .app {
+      width: min(100%, 700px);
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: 0 12px 35px rgba(45, 35, 100, .16);
+    }
+    header { margin-bottom: 22px; }
+    header h1 { font-size: 30px; color: #4d3fc7; margin-bottom: 6px; }
+    header p { color: #666; font-size: 15px; }
+    .titulo-roxo { color: #5b4bdb; }
+
+    .form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+    .form input {
+      flex: 1;
+      min-width: 0;
+      padding: 15px 16px;
+      border: 2px solid #ddd9f8;
+      border-radius: 14px;
+      font-size: 16px;
+      outline: none;
+    }
+    .form input:focus { border-color: #6554df; }
+    button {
+      border: 0;
+      cursor: pointer;
+      font-weight: bold;
+      border-radius: 14px;
+      min-height: 48px;
+      padding: 0 18px;
+      font-size: 15px;
+    }
+    .add-btn {
+      background: #5b4bdb;
+      color: white;
+      min-width: 125px;
+    }
+    .add-btn:active, .action:active { transform: scale(.97); }
+
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+      font-size: 14px;
+      color: #666;
+    }
+    #taskList { list-style: none; display: grid; gap: 10px; }
+    .task {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px;
+      border: 1px solid #e5e2f5;
+      border-radius: 16px;
+      background: #faf9ff;
+    }
+    .task.done .text {
+      text-decoration: line-through;
+      color: #999;
+    }
+    .check {
+      width: 46px;
+      min-width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      background: #e9e6ff;
+      color: #4d3fc7;
+      padding: 0;
+    }
+    .task.done .check { background: #5b4bdb; color: white; }
+    .text { flex: 1; overflow-wrap: anywhere; line-height: 1.35; }
+    .delete {
+      width: 46px;
+      min-width: 46px;
+      height: 46px;
+      padding: 0;
+      background: #ffe9e9;
+      color: #c73535;
+    }
+    .empty {
+      text-align: center;
+      padding: 28px 10px;
+      color: #888;
+    }
+    @media (max-width: 520px) {
+      body { padding: 10px; }
+      .app { padding: 18px; border-radius: 18px; }
+      header h1 { font-size: 25px; }
+      .form { flex-direction: column; }
+      .add-btn { width: 100%; }
+      .task { align-items: flex-start; }
+      .text { padding-top: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>✓ <span class="titulo-roxo">Envio de Tarefas</span></h1>
+      <p>Organize e envie suas tarefas de forma simples e rápida.</p>
+    </header>
+
+    <form class="form" id="taskForm">
+      <input id="taskInput" type="text" placeholder="Digite uma tarefa para enviar..." autocomplete="off" required>
+      <button class="add-btn" type="submit">Enviar tarefa</button>
+    </form>
+
+    <div class="stats">
+      <span id="total">0 tarefas</span>
+      <span id="completed">0 concluídas</span>
+    </div>
+
+    <ul id="taskList"></ul>
+    <div class="empty" id="empty">Nenhuma tarefa enviada ainda.</div>
+  </main>
+
+  <script>
+    const form = document.getElementById('taskForm');
+    const input = document.getElementById('taskInput');
+    const list = document.getElementById('taskList');
+    const empty = document.getElementById('empty');
+    const total = document.getElementById('total');
+    const completed = document.getElementById('completed');
+
+    let tasks = JSON.parse(localStorage.getItem('todoTasks') || '[]');
+
+    function save() {
+      localStorage.setItem('todoTasks', JSON.stringify(tasks));
+    }
+
+    function render() {
+      list.innerHTML = '';
+
+      tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.className = 'task' + (task.done ? ' done' : '');
+
+        const check = document.createElement('button');
+        check.className = 'check';
+        check.textContent = task.done ? '✓' : '○';
+        check.setAttribute('aria-label', task.done ? 'Desmarcar tarefa' : 'Concluir tarefa');
+        check.onclick = () => {
+          task.done = !task.done;
+          save();
+          render();
+        };
+
+        const span = document.createElement('span');
+        span.className = 'text';
+        span.textContent = task.text;
+
+        const del = document.createElement('button');
+        del.className = 'delete';
+        del.textContent = '🗑';
+        del.setAttribute('aria-label', 'Excluir tarefa');
+        del.onclick = () => {
+          tasks = tasks.filter(t => t.id !== task.id);
+          save();
+          render();
+        };
+
+        li.append(check, span, del);
+        list.appendChild(li);
+      });
+
+      const doneCount = tasks.filter(t => t.done).length;
+      total.textContent = `${tasks.length} ${tasks.length === 1 ? 'tarefa' : 'tarefas'}`;
+      completed.textContent = `${doneCount} concluída${doneCount === 1 ? '' : 's'}`;
+      empty.style.display = tasks.length ? 'none' : 'block';
+    }
+
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+
+      tasks.push({
+        id: Date.now(),
+        text,
+        done: false
+      });
+
+      save();
+      render();
+      input.value = '';
+      input.focus();
+    });
+
+    render();
+  </script>
+</body>
+</html>
+
+
+
+ desenvolvido por Ryan
